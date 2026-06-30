@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clean It · Recontactador Kommo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --blue:#0d74ff;
+      --blue-2:#0066ee;
+      --blue-3:#eaf3ff;
+      --ink:#14213d;
+      --muted:#68758e;
+      --line:#e7edf6;
+      --bg:#f6f9fd;
+      --card:#ffffff;
+      --danger:#d94848;
+      --danger-bg:#fff0f0;
+      --ok:#10a66a;
+      --ok-bg:#eafaf2;
+      --warn:#e8a100;
+      --warn-bg:#fff7df;
+      --shadow:0 18px 50px rgba(14,39,87,.08);
+      --radius:22px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:"Nunito", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--ink);
+      background:linear-gradient(180deg,#fff 0,#f7fbff 42%,#f3f7fc 100%);
+      min-height:100vh;
+    }
+    button,input,select,textarea{font:inherit}
+    a{color:var(--blue);text-decoration:none}
+    .hidden{display:none!important}
+
+    .app-shell{display:grid;grid-template-columns:292px 1fr;min-height:100vh}
+    .sidebar{
+      background:rgba(255,255,255,.92);
+      border-right:1px solid var(--line);
+      padding:26px 24px;
+      position:sticky;
+      top:0;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      gap:26px;
+    }
+    .brand{display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px 0 14px}
+    .brand img{width:118px;height:118px;object-fit:contain}
+    .brand h1{font-size:20px;line-height:1.1;margin:0;font-weight:900;text-align:center}
+    .brand p{margin:0;color:var(--muted);font-weight:700;font-size:13px;text-align:center}
+    .nav{display:grid;gap:8px}
+    .nav button{
+      border:0;background:transparent;color:#40516d;text-align:left;padding:14px 16px;border-radius:16px;
+      display:flex;align-items:center;gap:12px;font-weight:800;cursor:pointer;
+    }
+    .nav button.active,.nav button:hover{background:var(--blue-3);color:var(--blue)}
+    .icon{width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+    .user-box{margin-top:auto;border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;align-items:center;gap:12px;background:#fff;box-shadow:0 12px 30px rgba(12,41,80,.04)}
+    .avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--blue),#005fe8);color:#fff;display:grid;place-items:center;font-weight:900}
+    .user-box strong{display:block;font-size:14px}.user-box span{display:block;color:var(--muted);font-size:12px;font-weight:800}.logout{margin-left:auto;border:0;background:transparent;color:var(--muted);cursor:pointer;font-weight:900}
+
+    .main{min-width:0}
+    .topbar{height:78px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88);backdrop-filter:blur(16px);display:flex;align-items:center;gap:18px;padding:0 32px;position:sticky;top:0;z-index:10}
+    .search{max-width:530px;flex:1;position:relative}.search input{width:100%;height:48px;border:1px solid var(--line);border-radius:15px;padding:0 48px 0 18px;background:#fff;outline:none;font-weight:700;color:var(--ink)}
+    .search svg{position:absolute;right:16px;top:14px;color:#63748e}.top-spacer{flex:1}.date-pill{display:flex;align-items:center;gap:10px;color:#33415c;font-weight:900;white-space:nowrap}
+    .btn{border:0;border-radius:15px;background:var(--blue);color:#fff;font-weight:900;padding:13px 18px;cursor:pointer;box-shadow:0 12px 22px rgba(13,116,255,.22);display:inline-flex;align-items:center;gap:9px;justify-content:center}
+    .btn:hover{background:var(--blue-2)}.btn.secondary{background:#fff;color:var(--blue);border:1px solid var(--line);box-shadow:none}.btn.ghost{background:transparent;color:var(--blue);box-shadow:none;border:0;padding:8px 10px}.btn.danger{background:var(--danger);box-shadow:none}.btn.small{padding:9px 12px;border-radius:12px;font-size:13px}
+
+    .content{padding:24px 32px 42px;display:grid;gap:22px}.page-title{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.page-title h2{margin:0;font-size:27px;font-weight:950;letter-spacing:-.02em}.page-title p{margin:5px 0 0;color:var(--muted);font-weight:700;max-width:860px}.actions{display:flex;gap:10px;flex-wrap:wrap}
+    .cards{display:grid;grid-template-columns:repeat(5,minmax(160px,1fr));gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.metric{padding:19px;display:flex;gap:14px;align-items:center}.metric .bubble{width:50px;height:50px;border-radius:50%;background:var(--blue-3);display:grid;place-items:center;color:var(--blue)}.metric span{display:block;color:var(--muted);font-weight:800;font-size:13px}.metric strong{font-size:29px;line-height:1;color:var(--blue);font-weight:950}.metric small{display:block;color:var(--muted);font-weight:800;margin-top:4px}
+
+    .filters{display:grid;grid-template-columns:1.2fr repeat(5, minmax(140px, .8fr));gap:12px;padding:16px}.field label{display:block;font-size:12px;color:var(--muted);font-weight:900;margin:0 0 6px}.field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:14px;background:#fff;padding:11px 12px;outline:none;color:var(--ink);font-weight:750}.field textarea{min-height:84px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:#b9d6ff;box-shadow:0 0 0 4px rgba(13,116,255,.08)}
+
+    .panel{padding:18px}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:12px}.panel-head h3{margin:0;font-size:19px;font-weight:950}.panel-head small{color:var(--muted);font-weight:800}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:18px;background:#fff}.table{width:100%;border-collapse:collapse;min-width:1180px}.table th{position:sticky;top:0;background:#f8fbff;z-index:1;color:#52627c;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:13px 12px;border-bottom:1px solid var(--line);font-weight:950}.table td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle;font-weight:750}.table tr:hover td{background:#fbfdff}.table .primary{font-weight:950}.table .muted{color:var(--muted);font-size:12px;font-weight:800}.money{font-weight:950;color:#13284c;white-space:nowrap}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:950;white-space:nowrap}.pill.gray{background:#f1f4f8;color:#506078}.pill.red{background:var(--danger-bg);color:var(--danger)}.pill.blue{background:var(--blue-3);color:var(--blue)}.pill.green{background:var(--ok-bg);color:var(--ok)}.pill.yellow{background:var(--warn-bg);color:var(--warn)}
+    .inline-select,.inline-input{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:#fff;font-weight:850;min-width:142px}.inline-notes{min-width:220px}.check{width:20px;height:20px;accent-color:var(--blue);cursor:pointer}.row-actions{display:flex;gap:7px;align-items:center}.icon-btn{border:1px solid var(--line);background:#fff;color:#4d5e78;width:36px;height:36px;border-radius:12px;cursor:pointer;display:grid;place-items:center}.icon-btn:hover{border-color:#b8d4ff;color:var(--blue);background:#f8fbff}.expand-row td{background:#fbfdff!important;padding:0!important}.details{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;padding:16px}.detail-box{border:1px solid var(--line);border-radius:16px;background:#fff;padding:14px}.detail-box label{display:block;color:var(--muted);font-size:12px;font-weight:950;margin-bottom:4px}.detail-box div{font-weight:850;word-break:break-word}.empty{padding:42px;text-align:center;color:var(--muted);font-weight:850}.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--blue)}
+
+    .toast{position:fixed;right:24px;bottom:24px;z-index:60;background:#14213d;color:#fff;padding:13px 16px;border-radius:14px;box-shadow:0 12px 35px rgba(0,0,0,.18);font-weight:850;max-width:360px}.toast.error{background:#9b2525}.toast.ok{background:#066b46}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(9,24,48,.42);backdrop-filter:blur(6px);display:grid;place-items:center;z-index:50;padding:22px}.modal{width:min(920px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:28px;border:1px solid var(--line);box-shadow:0 35px 120px rgba(0,0,0,.22)}.modal-head{padding:22px 24px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:18px;align-items:center}.modal-head h3{margin:0;font-size:22px;font-weight:950}.modal-body{padding:22px 24px;display:grid;gap:16px}.modal-foot{padding:18px 24px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}.close{border:0;background:#f3f6fa;width:38px;height:38px;border-radius:14px;cursor:pointer;font-weight:950}.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.full{grid-column:1/-1}.hint{background:#f8fbff;border:1px dashed #cfe1f8;border-radius:16px;padding:14px;color:#53637b;font-weight:800;line-height:1.45}.preview-table{max-height:240px;overflow:auto;border:1px solid var(--line);border-radius:14px}.preview-table table{width:100%;border-collapse:collapse;font-size:12px}.preview-table th,.preview-table td{border-bottom:1px solid var(--line);padding:8px;text-align:left;white-space:nowrap}.login-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 20% 10%,#eaf3ff,transparent 28%),linear-gradient(180deg,#fff,#f4f8fd)}.login-card{width:min(500px,100%);background:#fff;border:1px solid var(--line);border-radius:30px;padding:34px;box-shadow:var(--shadow)}.login-card .brand img{width:105px;height:105px}.login-card h2{font-size:26px;text-align:center;margin:0 0 8px;font-weight:950}.login-card p{text-align:center;color:var(--muted);font-weight:800;margin:0 0 20px}.setup-grid{display:grid;gap:12px;margin-bottom:16px}.mobile-top{display:none}.sort-btn{border:0;background:transparent;color:var(--blue);font-weight:950;cursor:pointer;padding:0}
+
+    @media(max-width:1180px){.app-shell{grid-template-columns:1fr}.sidebar{display:none}.mobile-top{display:flex;align-items:center;gap:12px}.topbar{padding:0 18px}.topbar .date-pill{display:none}.content{padding:20px 18px 34px}.cards{grid-template-columns:repeat(2,1fr)}.filters{grid-template-columns:1fr 1fr}.details{grid-template-columns:1fr}.page-title{flex-direction:column}.search{max-width:none}.form-grid{grid-template-columns:1fr}}
+    @media(max-width:700px){.cards{grid-template-columns:1fr}.filters{grid-template-columns:1fr}.topbar{height:auto;min-height:74px;flex-wrap:wrap;padding:14px 16px}.btn{width:100%}.top-spacer{display:none}.content{padding:16px 12px 30px}.panel{padding:12px}.modal{border-radius:20px}.modal-body,.modal-head,.modal-foot{padding-left:16px;padding-right:16px}}
+  </style>
+</head>
+<body>
+  <div id="loginScreen" class="login-screen hidden">
+    <div class="login-card">
+      <div class="brand">
+        <img src="assets/cleanit-logo.png" alt="Clean It" />
+      </div>
+      <h2>Recontactador Kommo</h2>
+      <p>Base histórica de cancelados y leads perdidos.</p>
+
+      <div id="setupBox" class="setup-grid hidden">
+        <div class="hint">Primera configuración: pegá la URL del proyecto y la anon public key de Supabase. Quedan guardadas en este navegador.</div>
+        <div class="field"><label>Supabase Project URL</label><input id="setupUrl" placeholder="https://xxxx.supabase.co"></div>
+        <div class="field"><label>Supabase anon public key</label><input id="setupKey" placeholder="eyJhbGci..."></div>
+        <button class="btn" id="saveSetupBtn">Guardar configuración</button>
+      </div>
+
+      <form id="loginForm" class="setup-grid">
+        <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="email" required></div>
+        <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+        <button class="btn" type="submit">Ingresar</button>
+        <button class="btn secondary" type="button" id="changeSetupBtn">Cambiar configuración Supabase</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/cleanit-logo.png" alt="Clean It" />
+        <div>
+          <h1>Recontactador Kommo</h1>
+          <p>Cancelados · Leads perdidos</p>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="active" data-view="dashboard"><span class="icon" data-i="home"></span>Dashboard</button>
+        <button data-view="base"><span class="icon" data-i="table"></span>Base histórica</button>
+        <button data-view="reportes"><span class="icon" data-i="chart"></span>Reportes</button>
+        <button data-view="config"><span class="icon" data-i="settings"></span>Configuración</button>
+      </nav>
+      <div class="user-box">
+        <div class="avatar" id="avatar">CI</div>
+        <div><strong id="userName">Usuario</strong><span id="userRole">Operador</span></div>
+        <button class="logout" id="logoutBtn" title="Salir">⏻</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="mobile-top"><img src="assets/cleanit-logo.png" alt="Clean It" style="width:44px;height:44px;object-fit:contain"><strong>Recontactador Kommo</strong></div>
+        <div class="search"><input id="searchInput" placeholder="Buscar cliente, teléfono, servicio, franquicia, Kommo..." /><span class="icon" data-i="search"></span></div>
+        <div class="top-spacer"></div>
+        <div class="date-pill"><span class="icon" data-i="calendar"></span><span id="todayText"></span></div>
+        <div id="syncStatusPill" class="sync-pill"><span class="led"></span><small id="syncStatusText">Sync inactivo</small></div>
+        <button class="btn secondary" id="syncNowBtn" title="Sincronizar ahora desde el Sheet">Sync ahora</button>
+        <button class="btn secondary" id="importBtn"><span>↥</span>Importar base</button>
+        <button class="btn" id="newBtn"><span>+</span>Nuevo registro</button>
+      </header>
+
+      <section class="content">
+        <div class="page-title">
+          <div>
+            <h2>Base recuperable de Kommo</h2>
+            <p>Segmentá cancelados y leads perdidos por franquicia, servicio y monto. El objetivo es simple: ordenar el recupero, evitar doble contacto y medir qué se reconvierte.</p>
+          </div>
+          <div class="actions">
+            <button class="btn secondary small" id="exportBtn">Exportar CSV filtrado</button>
+            <button class="btn secondary small" id="refreshBtn">Actualizar</button>
+          </div>
+        </div>
+
+        <section class="cards">
+          <div class="card metric"><div class="bubble"><span class="icon" data-i="target"></span></div><div><span>Total filtrado</span><strong id="mTotal">0</strong><small>registros visibles</small></div></div>
+          <div class="card metric"><div class="bubble"><span class="icon" data-i="phone"></span></div><div><span>Sin contactar</span><strong id="mSin">0</strong><small>prioridad operativa</small></div></div>
+          <div class="card metric"><div class="bubble"><span class="icon" data-i="repeat"></span></div><div><span>Recontactados</span><strong id="mRec">0</strong><small>en gestión</small></div></div>
+          <div class="card metric"><div class="bubble"><span class="icon" data-i="check"></span></div><div><span>Cerrados</span><strong id="mCer">0</strong><small>recuperados</small></div></div>
+          <div class="card metric"><div class="bubble"><span class="icon" data-i="money"></span></div><div><span>Monto visible</span><strong id="mMonto">$0</strong><small>potencial filtrado</small></div></div>
+        </section>
+
+        <section class="card filters">
+          <div class="field"><label>Buscar</label><input id="filterSearch" placeholder="Cliente, teléfono, Kommo, observaciones..."></div>
+          <div class="field"><label>Franquicia</label><select id="filterFranquicia"><option value="">Todas</option></select></div>
+          <div class="field"><label>Servicio</label><select id="filterServicio"><option value="">Todos</option></select></div>
+          <div class="field"><label>Estado contacto</label><select id="filterEstado"><option value="">Todos</option><option>Sin contactar</option><option>Recontactado</option><option>Cerrado</option></select></div>
+          <div class="field"><label>Servicio realizado</label><select id="filterRealizado"><option value="">Todos</option><option value="true">Sí</option><option value="false">No</option></select></div>
+          <div class="field"><label>Operador</label><select id="filterOperador"><option value="">Todos</option></select></div>
+        </section>
+
+        <section id="dashboardView" class="card panel">
+          <div class="panel-head">
+            <div><h3>Turnos históricos a recontactar</h3><small id="resultCount">0 registros</small></div>
+            <div class="actions">
+              <button class="btn secondary small" id="sortAmountBtn">Monto ↓</button>
+              <button class="btn secondary small" id="clearFiltersBtn">Limpiar filtros</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:44px"></th>
+                  <th>Cliente / Contacto</th>
+                  <th>Franquicia</th>
+                  <th>Servicio</th>
+                  <th><button class="sort-btn" id="sortHeadBtn">Monto</button></th>
+                  <th>Estado contacto</th>
+                  <th>Observaciones</th>
+                  <th>Servicio realizado</th>
+                  <th>Origen</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="rowsBody"></tbody>
+            </table>
+            <div id="emptyState" class="empty hidden">No hay registros con estos filtros.</div>
+          </div>
+        </section>
+
+        <section id="reportesView" class="hidden">
+          <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+            <div class="card panel"><div class="panel-head"><h3>Por franquicia</h3></div><div id="reportFranquicia"></div></div>
+            <div class="card panel"><div class="panel-head"><h3>Por servicio</h3></div><div id="reportServicio"></div></div>
+            <div class="card panel"><div class="panel-head"><h3>Por estado</h3></div><div id="reportEstado"></div></div>
+          </div>
+        </section>
+
+        <section id="configView" class="hidden card panel">
+          <div class="panel-head"><h3>Configuración operativa</h3></div>
+          <div class="hint">
+            Esta herramienta está pensada para trabajar recupero comercial, no para reemplazar Kommo. Kommo sigue siendo la ficha madre; acá se arma el tablero táctico de recontacto: qué recuperar, quién lo contactó, qué dijo y si finalmente se hizo el servicio.
+          </div>
+          <div style="height:14px"></div>
+          <div class="form-grid">
+            <div class="field"><label>Rol actual</label><input id="configRole" disabled></div>
+            <div class="field"><label>Email actual</label><input id="configEmail" disabled></div>
+            <div class="field full"><label>Supabase URL</label><input id="configUrl"></div>
+            <div class="field full"><label>Supabase anon public key</label><input id="configKey"></div>
+            <div class="field full"><label>URL del Google Sheet / CSV fuente</label><input id="configSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=..."></div>
+            <div class="field"><label>Auto-sync desde Sheet</label><select id="configAutoSync"><option value="off">Apagado</option><option value="60000">Cada 1 minuto</option><option value="120000">Cada 2 minutos</option><option value="300000">Cada 5 minutos</option><option value="900000">Cada 15 minutos</option></select></div>
+            <div class="field"><label>Sincronizar solo cancelados/perdidos</label><select id="configOnlyLost"><option value="true">Sí</option><option value="false">No, traer todo</option></select></div>
+          </div>
+          <div style="height:14px"></div>
+          <div class="actions"><button class="btn secondary" id="saveConfigBtn">Guardar configuración local</button><button class="btn" id="saveSyncConfigBtn">Guardar sync y activar</button></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="recordModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head"><h3 id="recordModalTitle">Nuevo registro</h3><button class="close" data-close="recordModal">×</button></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field"><label>Cliente</label><input id="fCliente"></div>
+          <div class="field"><label>Teléfono</label><input id="fTelefono"></div>
+          <div class="field"><label>Email</label><input id="fEmail"></div>
+          <div class="field"><label>Franquicia</label><input id="fFranquicia"></div>
+          <div class="field"><label>Servicio</label><input id="fServicio"></div>
+          <div class="field"><label>Monto</label><input id="fMonto" inputmode="decimal"></div>
+          <div class="field"><label>Estado original</label><input id="fEstadoOriginal" placeholder="Cancelado / Lead perdido"></div>
+          <div class="field"><label>Fecha turno</label><input id="fFechaTurno" type="date"></div>
+          <div class="field full"><label>Link Kommo</label><input id="fKommoLink" placeholder="https://..."></div>
+          <div class="field"><label>Estado contacto</label><select id="fEstadoContacto"><option>Sin contactar</option><option>Recontactado</option><option>Cerrado</option></select></div>
+          <div class="field"><label>Servicio realizado</label><select id="fRealizado"><option value="false">No</option><option value="true">Sí</option></select></div>
+          <div class="field full"><label>Observaciones</label><textarea id="fObservaciones"></textarea></div>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="btn secondary" data-close="recordModal">Cancelar</button><button class="btn" id="saveRecordBtn">Guardar</button></div>
+    </div>
+  </div>
+
+  <div id="importModal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-head"><h3>Importar base Kommo / Google Sheets</h3><button class="close" data-close="importModal">×</button></div>
+      <div class="modal-body">
+        <div class="hint">
+          Podés importar una vez o dejar esta URL como fuente de sincronización automática. La app actualiza los datos base desde el Sheet, pero preserva el estado de contacto, observaciones y check de servicio realizado que se gestionan acá.
+        </div>
+        <div class="form-grid">
+          <div class="field full"><label>URL de Google Sheet o CSV público</label><input id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=..."></div>
+          <div class="field"><label>Archivo CSV</label><input id="csvFile" type="file" accept=".csv,text/csv"></div>
+          <div class="field"><label>Importar solamente cancelados / perdidos</label><select id="onlyLost"><option value="true">Sí</option><option value="false">No, importar todo</option></select></div>
+        </div>
+        <div class="actions"><button class="btn secondary" id="loadSheetBtn">Leer URL</button><button class="btn secondary" id="loadFileBtn">Leer archivo</button><button class="btn secondary" id="saveSourceFromImportBtn">Usar esta URL para auto-sync</button></div>
+        <div id="importPreviewBox" class="hidden">
+          <div class="panel-head"><h3>Previsualización</h3><small id="previewCount"></small></div>
+          <div class="preview-table"><table id="previewTable"></table></div>
+        </div>
+      </div>
+      <div class="modal-foot"><button class="btn secondary" data-close="importModal">Cancelar</button><button class="btn" id="confirmImportBtn" disabled>Importar registros</button></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+<script>
+(() => {
+  const LS_URL = 'cleanit_recontactador_supabase_url';
+  const LS_KEY = 'cleanit_recontactador_supabase_key';
+  const LS_SHEET_URL = 'cleanit_recontactador_sheet_url';
+  const LS_SYNC_INTERVAL = 'cleanit_recontactador_sync_interval';
+  const LS_ONLY_LOST = 'cleanit_recontactador_only_lost';
+  let sb = null;
+  let session = null;
+  let currentProfile = null;
+  let profiles = [];
+  let records = [];
+  let filtered = [];
+  let expandedId = null;
+  let editingId = null;
+  let importRows = [];
+  let amountDesc = true;
+  let syncTimer = null;
+  let realtimeChannel = null;
+  let syncInProgress = false;
+
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    loginScreen: $('loginScreen'), app: $('app'), setupBox: $('setupBox'), loginForm: $('loginForm'),
+    toast: $('toast'), rowsBody: $('rowsBody'), emptyState: $('emptyState')
+  };
+
+  const icons = {
+    home:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg>',
+    table:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg>',
+    chart:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19V5"/><path d="M4 19h17"/><rect x="7" y="11" width="3" height="5" rx="1"/><rect x="12" y="7" width="3" height="9" rx="1"/><rect x="17" y="9" width="3" height="7" rx="1"/></svg>',
+    settings:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6A1.7 1.7 0 0 0 10.4 2.9V3a2 2 0 1 1 4 0v-.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.39.15.74.36 1 .6.31.29.6.66.6 1.1V11a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>',
+    search:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+    calendar:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>',
+    target:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>',
+    phone:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.8 19.8 0 0 1 3 5.18 2 2 0 0 1 5 3h3a2 2 0 0 1 2 1.72c.12.9.32 1.77.59 2.61a2 2 0 0 1-.45 2.11L9 10.6a16 16 0 0 0 4.4 4.4l1.16-1.14a2 2 0 0 1 2.11-.45c.84.27 1.71.47 2.61.59A2 2 0 0 1 22 16.92Z"/></svg>',
+    repeat:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+    check:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 6 9 17l-5-5"/></svg>',
+    money:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7H14a3.5 3.5 0 1 1 0 7H6"/></svg>'
+  };
+
+  function installIcons(){ document.querySelectorAll('[data-i]').forEach(el => { el.innerHTML = icons[el.dataset.i] || ''; }); }
+  function toast(msg, type=''){ els.toast.textContent = msg; els.toast.className = 'toast ' + type; setTimeout(()=>els.toast.classList.add('hidden'), 3600); }
+  function money(v){ const n=Number(v||0); return n.toLocaleString('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:0}); }
+  function normalize(str){ return String(str||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim(); }
+  function initials(name,email){ const s=(name||email||'CI').trim(); return s.split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase(); }
+  function today(){ return new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}).replace(/^./,m=>m.toUpperCase()); }
+  function debounce(fn, wait=500){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args),wait); }; }
+  function esc(v){ return String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+  function getConfig(){ return { url: localStorage.getItem(LS_URL)||'', key: localStorage.getItem(LS_KEY)||'' }; }
+  function saveConfig(url,key){ localStorage.setItem(LS_URL, url.trim()); localStorage.setItem(LS_KEY, key.trim()); }
+  function getSyncConfig(){ return { sheetUrl: localStorage.getItem(LS_SHEET_URL)||'', interval: localStorage.getItem(LS_SYNC_INTERVAL)||'off', onlyLost: localStorage.getItem(LS_ONLY_LOST)||'true' }; }
+  function saveSyncConfig(sheetUrl, interval, onlyLost){ localStorage.setItem(LS_SHEET_URL, (sheetUrl||'').trim()); localStorage.setItem(LS_SYNC_INTERVAL, interval||'off'); localStorage.setItem(LS_ONLY_LOST, String(onlyLost)); }
+  function initSupabase(){
+    const {url,key}=getConfig();
+    if(!url || !key) return false;
+    sb = supabase.createClient(url,key);
+    return true;
+  }
+
+  async function boot(){
+    installIcons();
+    $('todayText').textContent = today();
+    const configured = initSupabase();
+    if(!configured){ showLogin(true); return; }
+    const { data } = await sb.auth.getSession();
+    session = data.session;
+    if(!session){ showLogin(false); return; }
+    await loadApp();
+  }
+
+  function showLogin(showSetup=false){
+    els.loginScreen.classList.remove('hidden'); els.app.classList.add('hidden');
+    $('setupBox').classList.toggle('hidden', !showSetup);
+    $('loginForm').classList.toggle('hidden', showSetup);
+    const cfg=getConfig(); $('setupUrl').value=cfg.url; $('setupKey').value=cfg.key;
+  }
+  function showApp(){ els.loginScreen.classList.add('hidden'); els.app.classList.remove('hidden'); }
+
+  async function loadApp(){
+    showApp();
+    await ensureProfile();
+    await loadProfiles();
+    await loadRecords();
+    renderUser();
+    renderFilters();
+    applyFilters();
+    setupRealtime();
+    startAutoSyncFromConfig();
+  }
+
+  async function ensureProfile(){
+    const user = session.user;
+    let {data, error} = await sb.from('cleanit_profiles').select('*').eq('id', user.id).maybeSingle();
+    if(error){ console.warn(error); }
+    if(!data){
+      const profile = {id:user.id, email:user.email, full_name:user.email.split('@')[0], role:'operador'};
+      const res = await sb.from('cleanit_profiles').insert(profile).select('*').single();
+      data = res.data;
+    }
+    currentProfile = data;
+  }
+
+  async function loadProfiles(){
+    const {data,error} = await sb.from('cleanit_profiles').select('id,email,full_name,role,franquicias').order('full_name');
+    if(error){ toast('No pude cargar usuarios/perfiles: ' + error.message, 'error'); profiles=[]; return; }
+    profiles = data || [];
+  }
+
+  async function loadRecords(){
+    const {data,error} = await sb.from('cleanit_recontacts').select('*').order('monto', {ascending:false}).limit(5000);
+    if(error){ toast('No pude cargar la base: ' + error.message, 'error'); records=[]; return; }
+    records = data || [];
+  }
+
+  function renderUser(){
+    $('userName').textContent = currentProfile?.full_name || session.user.email;
+    $('userRole').textContent = roleLabel(currentProfile?.role);
+    $('avatar').textContent = initials(currentProfile?.full_name, session.user.email);
+    $('configRole').value = roleLabel(currentProfile?.role);
+    $('configEmail').value = session.user.email;
+    const cfg=getConfig(); $('configUrl').value=cfg.url; $('configKey').value=cfg.key;
+    const scfg=getSyncConfig();
+    $('configSheetUrl').value=scfg.sheetUrl;
+    $('configAutoSync').value=scfg.interval;
+    $('configOnlyLost').value=scfg.onlyLost;
+  }
+  function roleLabel(r){ return ({admin:'Administrador', supervisora:'Supervisora', operador:'Operador'}[r] || 'Operador'); }
+
+  function renderFilters(){
+    const franquicias = [...new Set(records.map(r=>r.franquicia).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    const servicios = [...new Set(records.map(r=>r.servicio).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    fillSelect($('filterFranquicia'), franquicias, 'Todas');
+    fillSelect($('filterServicio'), servicios, 'Todos');
+    const opts = profiles.map(p=>({value:p.id, label:p.full_name || p.email || p.id}));
+    fillSelect($('filterOperador'), opts, 'Todos');
+  }
+  function fillSelect(sel, values, label){
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">${label}</option>` + values.map(v => {
+      if(typeof v === 'object') return `<option value="${esc(v.value)}">${esc(v.label)}</option>`;
+      return `<option value="${esc(v)}">${esc(v)}</option>`;
+    }).join('');
+    sel.value = [...sel.options].some(o=>o.value===prev) ? prev : '';
+  }
+
+  function applyFilters(){
+    const search = normalize($('filterSearch').value || $('searchInput').value);
+    const franquicia = $('filterFranquicia').value;
+    const servicio = $('filterServicio').value;
+    const estado = $('filterEstado').value;
+    const realizado = $('filterRealizado').value;
+    const operador = $('filterOperador').value;
+    filtered = records.filter(r => {
+      if(franquicia && r.franquicia !== franquicia) return false;
+      if(servicio && r.servicio !== servicio) return false;
+      if(estado && r.estado_contacto !== estado) return false;
+      if(realizado !== '' && String(!!r.servicio_realizado) !== realizado) return false;
+      if(operador && r.assigned_to !== operador) return false;
+      if(search){
+        const blob = normalize([r.cliente,r.telefono,r.email,r.franquicia,r.servicio,r.monto,r.estado_contacto,r.estado_original,r.observaciones,r.kommo_id,r.kommo_link].join(' '));
+        if(!blob.includes(search)) return false;
+      }
+      return true;
+    });
+    filtered.sort((a,b)=> amountDesc ? Number(b.monto||0)-Number(a.monto||0) : Number(a.monto||0)-Number(b.monto||0));
+    renderMetrics(); renderRows(); renderReports();
+  }
+
+  function renderMetrics(){
+    const total=filtered.length;
+    const sin=filtered.filter(r=>r.estado_contacto==='Sin contactar').length;
+    const rec=filtered.filter(r=>r.estado_contacto==='Recontactado').length;
+    const cer=filtered.filter(r=>r.estado_contacto==='Cerrado').length;
+    const monto=filtered.reduce((s,r)=>s+Number(r.monto||0),0);
+    $('mTotal').textContent=total;
+    $('mSin').textContent=sin;
+    $('mRec').textContent=rec;
+    $('mCer').textContent=cer;
+    $('mMonto').textContent=money(monto);
+    $('resultCount').textContent=`${total} registros`;
+  }
+
+  function statePill(state){
+    if(state==='Cerrado') return 'green';
+    if(state==='Recontactado') return 'blue';
+    return 'red';
+  }
+  function originPill(origin){
+    const n=normalize(origin);
+    if(n.includes('perdid')) return 'yellow';
+    if(n.includes('cancel')) return 'red';
+    return 'gray';
+  }
+  function profileName(id){ const p=profiles.find(x=>x.id===id); return p ? (p.full_name || p.email) : 'Sin asignar'; }
+  function whatsLink(phone){
+    const digits = String(phone||'').replace(/\D/g,'');
+    if(!digits) return '';
+    const final = digits.startsWith('54') ? digits : '54' + digits;
+    return `https://wa.me/${final}`;
+  }
+
+  function renderRows(){
+    els.rowsBody.innerHTML = '';
+    $('emptyState').classList.toggle('hidden', filtered.length > 0);
+    const frag = document.createDocumentFragment();
+    filtered.forEach(r => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><button class="icon-btn" data-action="expand" data-id="${r.id}" title="Ver detalle">${expandedId===r.id?'−':'+'}</button></td>
+        <td>
+          <div class="primary">${esc(r.cliente || 'Sin cliente')}</div>
+          <div class="muted">${esc(r.telefono || '')}${r.email ? ' · ' + esc(r.email) : ''}</div>
+          <div class="muted">Operador: ${esc(profileName(r.assigned_to))}</div>
+        </td>
+        <td><span class="pill gray">${esc(r.franquicia || 'Sin franquicia')}</span></td>
+        <td><div class="primary">${esc(r.servicio || 'Sin servicio')}</div><div class="muted">${r.fecha_turno ? esc(formatDate(r.fecha_turno)) : ''}</div></td>
+        <td class="money">${money(r.monto)}</td>
+        <td>
+          <select class="inline-select" data-action="estado" data-id="${r.id}">
+            ${['Sin contactar','Recontactado','Cerrado'].map(x=>`<option ${r.estado_contacto===x?'selected':''}>${x}</option>`).join('')}
+          </select>
+        </td>
+        <td><input class="inline-input inline-notes" data-action="observaciones" data-id="${r.id}" value="${esc(r.observaciones || '')}" placeholder="Observaciones"></td>
+        <td style="text-align:center"><input class="check" type="checkbox" data-action="realizado" data-id="${r.id}" ${r.servicio_realizado?'checked':''}></td>
+        <td><span class="pill ${originPill(r.estado_original)}">${esc(r.estado_original || 'Histórico')}</span></td>
+        <td>
+          <div class="row-actions">
+            ${r.kommo_link ? `<a class="icon-btn" href="${esc(r.kommo_link)}" target="_blank" title="Abrir Kommo">K</a>` : ''}
+            ${whatsLink(r.telefono) ? `<a class="icon-btn" href="${esc(whatsLink(r.telefono))}" target="_blank" title="WhatsApp">W</a>` : ''}
+            <button class="icon-btn" data-action="edit" data-id="${r.id}" title="Editar">✎</button>
+            ${currentProfile?.role==='admin' ? `<button class="icon-btn" data-action="delete" data-id="${r.id}" title="Eliminar">🗑</button>` : ''}
+          </div>
+        </td>`;
+      frag.appendChild(tr);
+      if(expandedId === r.id){
+        const ex = document.createElement('tr'); ex.className='expand-row';
+        ex.innerHTML = `<td colspan="10"><div class="details">
+          <div class="detail-box"><label>Link Kommo</label><div>${r.kommo_link ? `<a href="${esc(r.kommo_link)}" target="_blank">${esc(r.kommo_link)}</a>` : 'Sin link'}</div></div>
+          <div class="detail-box"><label>ID Kommo</label><div>${esc(r.kommo_id || 'Sin ID')}</div></div>
+          <div class="detail-box"><label>Fecha importación</label><div>${esc(formatDateTime(r.imported_at))}</div></div>
+          <div class="detail-box"><label>Estado original</label><div>${esc(r.estado_original || '')}</div></div>
+          <div class="detail-box"><label>Fuente</label><div>${esc(r.source || '')}</div></div>
+          <div class="detail-box"><label>Última actualización</label><div>${esc(formatDateTime(r.updated_at))}</div></div>
+        </div></td>`;
+        frag.appendChild(ex);
+      }
+    });
+    els.rowsBody.appendChild(frag);
+  }
+
+  function formatDate(d){ if(!d) return ''; const date = new Date(d+'T00:00:00'); return date.toLocaleDateString('es-AR'); }
+  function formatDateTime(d){ if(!d) return ''; return new Date(d).toLocaleString('es-AR'); }
+
+  const saveNotesDebounced = debounce(async (id, value) => await updateRecord(id,{observaciones:value}), 650);
+  els.rowsBody.addEventListener('change', async (e) => {
+    const action=e.target.dataset.action, id=e.target.dataset.id; if(!action || !id) return;
+    if(action==='estado') await updateRecord(id,{estado_contacto:e.target.value});
+    if(action==='realizado') await updateRecord(id,{servicio_realizado:e.target.checked});
+  });
+  els.rowsBody.addEventListener('input', (e) => {
+    if(e.target.dataset.action==='observaciones') saveNotesDebounced(e.target.dataset.id,e.target.value);
+  });
+  els.rowsBody.addEventListener('click', async (e) => {
+    const btn=e.target.closest('[data-action]'); if(!btn) return;
+    const action=btn.dataset.action, id=btn.dataset.id;
+    if(action==='expand'){ expandedId = expandedId===id ? null : id; renderRows(); }
+    if(action==='edit') openRecordModal(records.find(r=>r.id===id));
+    if(action==='delete') await deleteRecord(id);
+  });
+
+  async function updateRecord(id, patch){
+    patch.updated_by = session.user.id;
+    const {data,error} = await sb.from('cleanit_recontacts').update(patch).eq('id',id).select('*').single();
+    if(error){ toast('No pude guardar: ' + error.message, 'error'); return; }
+    const i=records.findIndex(r=>r.id===id); if(i>=0) records[i]=data;
+    applyFilters();
+    toast('Guardado', 'ok');
+  }
+
+  async function deleteRecord(id){
+    if(!confirm('¿Eliminar este registro?')) return;
+    const {error}=await sb.from('cleanit_recontacts').delete().eq('id',id);
+    if(error){ toast('No pude eliminar: ' + error.message, 'error'); return; }
+    records = records.filter(r=>r.id!==id); applyFilters(); toast('Registro eliminado','ok');
+  }
+
+  function openRecordModal(r=null){
+    editingId = r?.id || null;
+    $('recordModalTitle').textContent = r ? 'Editar registro' : 'Nuevo registro';
+    $('fCliente').value = r?.cliente || '';
+    $('fTelefono').value = r?.telefono || '';
+    $('fEmail').value = r?.email || '';
+    $('fFranquicia').value = r?.franquicia || '';
+    $('fServicio').value = r?.servicio || '';
+    $('fMonto').value = r?.monto || '';
+    $('fEstadoOriginal').value = r?.estado_original || '';
+    $('fFechaTurno').value = r?.fecha_turno || '';
+    $('fKommoLink').value = r?.kommo_link || '';
+    $('fEstadoContacto').value = r?.estado_contacto || 'Sin contactar';
+    $('fRealizado').value = String(!!r?.servicio_realizado);
+    $('fObservaciones').value = r?.observaciones || '';
+    $('recordModal').classList.remove('hidden');
+  }
+  function closeModal(id){ $(id).classList.add('hidden'); }
+
+  async function saveRecord(){
+    const row = {
+      external_key: editingId ? undefined : await makeExternalKey({
+        cliente:$('fCliente').value, telefono:$('fTelefono').value, servicio:$('fServicio').value, fecha_turno:$('fFechaTurno').value, kommo_link:$('fKommoLink').value
+      }),
+      cliente:$('fCliente').value.trim(), telefono:$('fTelefono').value.trim(), email:$('fEmail').value.trim(), franquicia:$('fFranquicia').value.trim(),
+      servicio:$('fServicio').value.trim(), monto:parseMoney($('fMonto').value), estado_original:$('fEstadoOriginal').value.trim(), fecha_turno:$('fFechaTurno').value || null,
+      kommo_link:$('fKommoLink').value.trim(), estado_contacto:$('fEstadoContacto').value, servicio_realizado:$('fRealizado').value==='true', observaciones:$('fObservaciones').value.trim(),
+      updated_by:session.user.id
+    };
+    Object.keys(row).forEach(k=>row[k]===undefined && delete row[k]);
+    let res;
+    if(editingId) res = await sb.from('cleanit_recontacts').update(row).eq('id',editingId).select('*').single();
+    else res = await sb.from('cleanit_recontacts').insert(row).select('*').single();
+    if(res.error){ toast('No pude guardar: ' + res.error.message, 'error'); return; }
+    if(editingId){ const i=records.findIndex(r=>r.id===editingId); if(i>=0) records[i]=res.data; }
+    else records.unshift(res.data);
+    closeModal('recordModal'); renderFilters(); applyFilters(); toast('Registro guardado','ok');
+  }
+
+  function parseMoney(v){
+    if(v===null || v===undefined) return 0;
+    let s=String(v).trim();
+    if(!s) return 0;
+    s=s.replace(/\s/g,'').replace(/[$ARS]/gi,'');
+    if(s.includes(',') && s.includes('.')) s=s.replace(/\./g,'').replace(',', '.');
+    else if(s.includes(',')) s=s.replace(',', '.');
+    const n=Number(s.replace(/[^0-9.-]/g,''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  async function makeExternalKey(obj){
+    const raw = normalize([obj.kommo_id,obj.kommo_link,obj.cliente,obj.telefono,obj.fecha_turno,obj.servicio].join('|')) || String(Date.now()+Math.random());
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw));
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('').slice(0,48);
+  }
+
+  function googleSheetToCsvUrl(url){
+    if(!url) return '';
+    if(url.includes('/export?') || url.includes('/gviz/') || url.includes('tqx=out:csv') || url.match(/\.csv(\?|$)/)) return url;
+    const id = url.match(/\/spreadsheets\/d\/([^/]+)/)?.[1];
+    const gid = url.match(/[?&#]gid=(\d+)/)?.[1] || '0';
+    if(id) return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv&gid=${gid}`;
+    return url;
+  }
+
+  async function loadCsvFromUrl(){
+    const rawUrl = $('sheetUrl').value.trim();
+    const url = googleSheetToCsvUrl(rawUrl);
+    if(!url){ toast('Pegá una URL válida.', 'error'); return; }
+    try{
+      setSyncStatus('warn','Leyendo Sheet...');
+      const res = await fetch(url + (url.includes('?') ? '&' : '?') + 'cacheBust=' + Date.now());
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      handleCsv(text);
+      setSyncStatus('live','Lectura OK');
+    }catch(err){ setSyncStatus('error','Error de lectura'); toast('No pude leer la URL. Probablemente el Sheet no es público, el gid no corresponde o Google bloqueó la lectura. Probá exportar CSV manualmente.', 'error'); }
+  }
+
+  async function loadCsvFromFile(){
+    const file = $('csvFile').files[0];
+    if(!file){ toast('Seleccioná un archivo CSV.', 'error'); return; }
+    const text = await file.text();
+    handleCsv(text);
+  }
+
+  function parseCsv(text){
+    const rows=[]; let row=[], cur='', inQuotes=false;
+    for(let i=0;i<text.length;i++){
+      const ch=text[i], next=text[i+1];
+      if(ch==='"'){
+        if(inQuotes && next==='"'){ cur+='"'; i++; }
+        else inQuotes=!inQuotes;
+      } else if(ch===',' && !inQuotes){ row.push(cur); cur=''; }
+      else if((ch==='\n' || ch==='\r') && !inQuotes){
+        if(ch==='\r' && next==='\n') i++;
+        row.push(cur); cur='';
+        if(row.some(x=>String(x).trim()!=='')) rows.push(row);
+        row=[];
+      } else cur+=ch;
+    }
+    row.push(cur); if(row.some(x=>String(x).trim()!=='')) rows.push(row);
+    if(rows.length<2) return [];
+    const headers=rows[0].map(h=>String(h||'').trim());
+    return rows.slice(1).map(cells => Object.fromEntries(headers.map((h,i)=>[h,cells[i] ?? ''])));
+  }
+
+  function findField(obj, names){
+    const keys=Object.keys(obj);
+    for(const n of names){
+      const nn=normalize(n);
+      const k=keys.find(k=>normalize(k)===nn) || keys.find(k=>normalize(k).includes(nn)) || keys.find(k=>nn.includes(normalize(k)) && normalize(k).length>2);
+      if(k) return obj[k];
+    }
+    return '';
+  }
+
+  function mapRow(row){
+    const allText = Object.values(row).join(' ');
+    const estadoOriginal = findField(row,['estado','status','etapa','pipeline','resultado','motivo','estado original']) || detectOrigin(allText);
+    const kommoId = findField(row,['id kommo','lead id','id lead','id','kommo id']);
+    const kommoLink = findField(row,['link kommo','kommo','url','link','lead link']);
+    return {
+      source:'kommo_sheet',
+      kommo_id:String(kommoId||'').trim(),
+      kommo_link:String(kommoLink||'').trim(),
+      estado_original:String(estadoOriginal||'Histórico').trim(),
+      fecha_turno: parseDate(findField(row,['fecha turno','fecha','fecha agenda','día','dia','created at','fecha de creación'])),
+      cliente:String(findField(row,['cliente','nombre','contacto','lead','persona','nombre completo'])||'').trim(),
+      telefono:String(findField(row,['telefono','teléfono','phone','celular','whatsapp','contacto telefono'])||'').trim(),
+      email:String(findField(row,['email','mail','correo'])||'').trim(),
+      franquicia:String(findField(row,['franquicia','zona','sucursal','agenda','localidad'])||'').trim(),
+      servicio:String(findField(row,['servicio','tipo servicio','tipo de servicio','producto','interes','interés'])||'').trim(),
+      monto:parseMoney(findField(row,['monto','importe','precio','valor','presupuesto','total'])),
+      estado_contacto:'Sin contactar',
+      observaciones:String(findField(row,['observaciones','nota','notas','comentario','comentarios'])||'').trim(),
+      servicio_realizado:false,
+      raw_data:row
+    };
+  }
+
+  function detectOrigin(text){
+    const n=normalize(text);
+    if(n.includes('cancel')) return 'Cancelado';
+    if(n.includes('perdid') || n.includes('lost')) return 'Lead perdido';
+    return 'Histórico';
+  }
+  function isLostOrCancelled(row){
+    const blob = normalize([row.estado_original, JSON.stringify(row.raw_data)].join(' '));
+    return blob.includes('cancel') || blob.includes('perdid') || blob.includes('lost');
+  }
+
+  function parseDate(v){
+    const s=String(v||'').trim(); if(!s) return null;
+    const m=s.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);
+    if(m){ const y=m[3].length===2 ? '20'+m[3] : m[3]; return `${y}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; }
+    const iso=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const d=new Date(s); return isNaN(d) ? null : d.toISOString().slice(0,10);
+  }
+
+  function handleCsv(text){
+    const parsed = parseCsv(text);
+    if(!parsed.length){ toast('El CSV no tiene filas válidas.', 'error'); return; }
+    let mapped = parsed.map(mapRow);
+    if($('onlyLost').value==='true') mapped = mapped.filter(isLostOrCancelled);
+    importRows = mapped;
+    renderImportPreview(mapped);
+    $('confirmImportBtn').disabled = mapped.length === 0;
+    toast(`${mapped.length} registros listos para importar.`, mapped.length ? 'ok':'error');
+  }
+
+  function renderImportPreview(rows){
+    $('importPreviewBox').classList.remove('hidden');
+    $('previewCount').textContent = `${rows.length} registros detectados`;
+    const sample=rows.slice(0,20);
+    $('previewTable').innerHTML = `<thead><tr><th>Cliente</th><th>Teléfono</th><th>Franquicia</th><th>Servicio</th><th>Monto</th><th>Estado original</th></tr></thead><tbody>${sample.map(r=>`<tr><td>${esc(r.cliente)}</td><td>${esc(r.telefono)}</td><td>${esc(r.franquicia)}</td><td>${esc(r.servicio)}</td><td>${money(r.monto)}</td><td>${esc(r.estado_original)}</td></tr>`).join('')}</tbody>`;
+  }
+
+  async function confirmImport(){
+    if(!importRows.length) return;
+    $('confirmImportBtn').disabled = true;
+    try{
+      const total = await syncRowsToSupabase(importRows, 'importación manual');
+      closeModal('importModal'); importRows=[]; await loadRecords(); renderFilters(); applyFilters(); toast(`Importación completada: ${total} registros procesados.`, 'ok');
+    }catch(err){ toast('Error al importar: ' + err.message, 'error'); }
+    finally{ $('confirmImportBtn').disabled = false; }
+  }
+
+  async function syncRowsToSupabase(rows, sourceLabel='sheet'){
+    const payload=[];
+    for(const r of rows){ payload.push({...r, external_key: await makeExternalKey(r), updated_by:session.user.id}); }
+    let total=0;
+    for(let i=0;i<payload.length;i+=400){
+      const chunk=payload.slice(i,i+400);
+      const {data,error} = await sb.rpc('sync_cleanit_recontacts_from_sheet', { p_rows: chunk });
+      if(error) throw error;
+      total += Number(data || chunk.length || 0);
+    }
+    return total;
+  }
+
+  async function syncFromConfiguredSheet({silent=false}={}){
+    const cfg=getSyncConfig();
+    if(!cfg.sheetUrl){ if(!silent) toast('No hay URL de Sheet configurada.', 'error'); setSyncStatus('', 'Sync inactivo'); return; }
+    if(syncInProgress) return;
+    syncInProgress = true;
+    try{
+      setSyncStatus('warn','Sincronizando...');
+      const csvUrl = googleSheetToCsvUrl(cfg.sheetUrl);
+      const res = await fetch(csvUrl + (csvUrl.includes('?') ? '&' : '?') + 'cacheBust=' + Date.now());
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      const parsed = parseCsv(text);
+      let mapped = parsed.map(mapRow);
+      if(cfg.onlyLost==='true') mapped = mapped.filter(isLostOrCancelled);
+      const total = mapped.length ? await syncRowsToSupabase(mapped, 'auto-sync') : 0;
+      await loadRecords(); renderFilters(); applyFilters();
+      setSyncStatus('live', `Sync OK · ${new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`);
+      if(!silent) toast(`Sync completado: ${total} registros procesados.`, 'ok');
+    }catch(err){
+      console.error(err);
+      setSyncStatus('error','Sync con error');
+      if(!silent) toast('No pude sincronizar el Sheet: ' + err.message, 'error');
+    }finally{ syncInProgress = false; }
+  }
+
+  function startAutoSyncFromConfig(){
+    if(syncTimer){ clearInterval(syncTimer); syncTimer=null; }
+    const cfg=getSyncConfig();
+    if(!['admin','supervisora'].includes(currentProfile?.role)) { setSyncStatus('live','Realtime activo'); return; }
+    if(!cfg.sheetUrl || cfg.interval==='off'){ setSyncStatus('', 'Sync inactivo'); return; }
+    setSyncStatus('live','Sync automático activo');
+    syncFromConfiguredSheet({silent:true});
+    syncTimer = setInterval(()=>syncFromConfiguredSheet({silent:true}), Number(cfg.interval));
+  }
+
+  function setSyncStatus(type, text){
+    const pill=$('syncStatusPill');
+    if(!pill) return;
+    pill.className='sync-pill ' + (type||'');
+    $('syncStatusText').textContent=text;
+  }
+
+  function setupRealtime(){
+    if(realtimeChannel || !sb) return;
+    realtimeChannel = sb.channel('cleanit_recontacts_realtime')
+      .on('postgres_changes', {event:'*', schema:'public', table:'cleanit_recontacts'}, payload => {
+        if(payload.eventType === 'INSERT') records.unshift(payload.new);
+        if(payload.eventType === 'UPDATE'){
+          const i=records.findIndex(r=>r.id===payload.new.id);
+          if(i>=0) records[i]=payload.new; else records.unshift(payload.new);
+        }
+        if(payload.eventType === 'DELETE') records = records.filter(r=>r.id!==payload.old.id);
+        renderFilters(); applyFilters();
+      })
+      .subscribe(status => {
+        if(status === 'SUBSCRIBED') console.info('Realtime activo');
+      });
+  }
+
+  function renderReports(){
+    renderReport('reportFranquicia', groupBy(filtered,'franquicia'));
+    renderReport('reportServicio', groupBy(filtered,'servicio'));
+    renderReport('reportEstado', groupBy(filtered,'estado_contacto'));
+  }
+  function groupBy(rows,key){
+    const m=new Map(); rows.forEach(r=>{ const k=r[key] || 'Sin dato'; const it=m.get(k)||{name:k,count:0,monto:0,cerrados:0,realizados:0}; it.count++; it.monto+=Number(r.monto||0); if(r.estado_contacto==='Cerrado') it.cerrados++; if(r.servicio_realizado) it.realizados++; m.set(k,it); });
+    return [...m.values()].sort((a,b)=>b.monto-a.monto);
+  }
+  function renderReport(id, data){
+    $(id).innerHTML = data.length ? data.slice(0,12).map(x=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)"><div><strong>${esc(x.name)}</strong><div class="muted">${x.count} registros · ${x.cerrados} cerrados · ${x.realizados} realizados</div></div><strong>${money(x.monto)}</strong></div>`).join('') : '<div class="empty">Sin datos</div>';
+  }
+
+  function exportCsv(){
+    const headers=['cliente','telefono','email','franquicia','servicio','monto','estado_contacto','servicio_realizado','observaciones','estado_original','fecha_turno','kommo_link','operador'];
+    const csv=[headers.join(',')].concat(filtered.map(r=>headers.map(h=>csvCell(h==='operador'?profileName(r.assigned_to):r[h])).join(','))).join('\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=`cleanit_recontactos_${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(url);
+  }
+  function csvCell(v){ const s=String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s; }
+
+  // Events
+  $('saveSetupBtn').addEventListener('click', () => { saveConfig($('setupUrl').value,$('setupKey').value); initSupabase(); showLogin(false); toast('Configuración guardada','ok'); });
+  $('changeSetupBtn').addEventListener('click', () => showLogin(true));
+  $('loginForm').addEventListener('submit', async (e)=>{ e.preventDefault(); if(!sb && !initSupabase()) return showLogin(true); const {data,error}=await sb.auth.signInWithPassword({email:$('loginEmail').value,password:$('loginPassword').value}); if(error){ toast('Login inválido: '+error.message,'error'); return; } session=data.session; await loadApp(); });
+  $('logoutBtn').addEventListener('click', async()=>{ if(syncTimer) clearInterval(syncTimer); if(realtimeChannel) await sb.removeChannel(realtimeChannel); await sb.auth.signOut(); session=null; showLogin(false); });
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));
+  $('newBtn').addEventListener('click',()=>openRecordModal());
+  $('saveRecordBtn').addEventListener('click',saveRecord);
+  $('importBtn').addEventListener('click',()=>{ const scfg=getSyncConfig(); $('sheetUrl').value=scfg.sheetUrl; $('onlyLost').value=scfg.onlyLost; $('importModal').classList.remove('hidden'); $('confirmImportBtn').disabled=true; $('importPreviewBox').classList.add('hidden'); importRows=[]; });
+  $('loadSheetBtn').addEventListener('click',loadCsvFromUrl);
+  $('loadFileBtn').addEventListener('click',loadCsvFromFile);
+  $('saveSourceFromImportBtn').addEventListener('click',()=>{ saveSyncConfig($('sheetUrl').value.trim(), getSyncConfig().interval==='off'?'60000':getSyncConfig().interval, $('onlyLost').value); renderUser(); startAutoSyncFromConfig(); toast('URL guardada como fuente de auto-sync.','ok'); });
+  $('confirmImportBtn').addEventListener('click',confirmImport);
+  $('refreshBtn').addEventListener('click',async()=>{ await loadProfiles(); await loadRecords(); renderFilters(); applyFilters(); toast('Base actualizada desde Supabase','ok'); });
+  $('syncNowBtn').addEventListener('click',()=>syncFromConfiguredSheet({silent:false}));
+  $('exportBtn').addEventListener('click',exportCsv);
+  $('saveConfigBtn').addEventListener('click',()=>{ saveConfig($('configUrl').value,$('configKey').value); saveSyncConfig($('configSheetUrl').value,$('configAutoSync').value,$('configOnlyLost').value); toast('Configuración local guardada. Recargá la página para aplicar si cambiaste proyecto Supabase.','ok'); startAutoSyncFromConfig(); });
+  $('saveSyncConfigBtn').addEventListener('click',()=>{ saveSyncConfig($('configSheetUrl').value,$('configAutoSync').value,$('configOnlyLost').value); startAutoSyncFromConfig(); toast('Sincronización configurada.','ok'); });
+  $('sortAmountBtn').addEventListener('click',()=>{ amountDesc=!amountDesc; $('sortAmountBtn').textContent=amountDesc?'Monto ↓':'Monto ↑'; applyFilters(); });
+  $('sortHeadBtn').addEventListener('click',()=>{ amountDesc=!amountDesc; $('sortAmountBtn').textContent=amountDesc?'Monto ↓':'Monto ↑'; applyFilters(); });
+  $('clearFiltersBtn').addEventListener('click',()=>{ ['filterSearch','searchInput'].forEach(id=>$(id).value=''); ['filterFranquicia','filterServicio','filterEstado','filterRealizado','filterOperador'].forEach(id=>$(id).value=''); applyFilters(); });
+  ['filterSearch','filterFranquicia','filterServicio','filterEstado','filterRealizado','filterOperador'].forEach(id=>$(id).addEventListener('input',applyFilters));
+  $('searchInput').addEventListener('input',()=>{ $('filterSearch').value=$('searchInput').value; applyFilters(); });
+  document.querySelectorAll('.nav button').forEach(btn=>btn.addEventListener('click',()=>{
+    document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
+    const v=btn.dataset.view;
+    $('dashboardView').classList.toggle('hidden', !(v==='dashboard'||v==='base'));
+    $('reportesView').classList.toggle('hidden', v!=='reportes');
+    $('configView').classList.toggle('hidden', v!=='config');
+  }));
+
+  boot();
+})();
+</script>
+</body>
+</html>
